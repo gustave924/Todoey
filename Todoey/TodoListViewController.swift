@@ -9,7 +9,7 @@
 import UIKit
 
 class TodoListViewController: UITableViewController {
-    let dummy = ["Hey", "Hello", "Hi"]
+    var dummy = ["Hey", "Hello", "Hi"]
     override func viewDidLoad() {
         super.viewDidLoad()
         // Do any additional setup after loading the view.
@@ -45,5 +45,26 @@ class TodoListViewController: UITableViewController {
         }
         tableView.deselectRow(at: indexPath, animated: true)
     }
+    
+    @IBAction func addItemAction(_ sender: Any) {
+        
+        let alert = UIAlertController(title: "Add new todoey item", message: "", preferredStyle: .alert)
+        
+        let action = UIAlertAction(title: "Add item", style: .default) {
+            (action) in
+            let textField = alert.textFields![0]
+            self.dummy.append(textField.text!)
+            self.tableView.reloadData()
+        }
+        
+        alert.addTextField { (userInput) in
+            userInput.placeholder = "Add a todey item"
+        }
+        
+        alert.addAction(action)
+        
+        present(alert, animated: true, completion: nil)
+    }
+    
 }
 
