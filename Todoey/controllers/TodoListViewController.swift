@@ -7,17 +7,22 @@
 //
 
 import UIKit
+import CoreData
 
 class TodoListViewController: UITableViewController {
-    var dummy : [TodoItem] = [TodoItem(itemValue: "Hey", isChecked: false),
-                              TodoItem(itemValue: "Hello", isChecked: false),
-                              TodoItem(itemValue: "Hi", isChecked: false)]
+    var dummy : [Item] = []
     let defaults = UserDefaults.standard
-    let filePath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first?.appendingPathComponent("Items.plist")
+    let context = (UIApplication.shared.delegate as! AppDelegate).persistentContainer.viewContext
+    var selectedCategory: Category?{
+        didSet{
+            loadTasks()
+        }
+    }
+    
     override func viewDidLoad() {
         super.viewDidLoad()
         // Do any additional setup after loading the view.
-        loadTasks()
+        //print(FileManager.default.urls(for: .documentDirectory, in: .userDomainMask))
 
     }
 
@@ -31,7 +36,7 @@ class TodoListViewController: UITableViewController {
         let cell = tableView.dequeueReusableCell(withIdentifier: "cell", for: indexPath)
         
         // Configure the cell’s contents.
-        cell.textLabel?.text = dummy[indexPath.row].itemValue
+        cell.textLabel?.text = dummy[indexPath.row].title
         let isChecked = dummy[indexPath.row].isChecked
         if(isChecked){
             cell.accessoryType = .checkmark
@@ -61,7 +66,11 @@ class TodoListViewController: UITableViewController {
         let action = UIAlertAction(title: "Add item", style: .default) {
             (action) in
             let textField = alert.textFields![0]
-            self.dummy.append(TodoItem(itemValue: textField.text!, isChecked: false))
+            let item = Item(context: self.context)
+            item.title = textField.text!
+            item.isChecked = false
+            item.parentCategory = self.selectedCategory
+            self.dummy.append(item)
             
             self.saveTasks()
             
@@ -78,23 +87,47 @@ class TodoListViewController: UITableViewController {
     }
     
     func saveTasks(){
-        let encoder = PropertyListEncoder()
+        
         do{
-            let data = try encoder.encode(self.dummy)
-            try data.write(to: self.filePath!)
+            try context.save()
         }catch{
             print("error w7esh 5ales \(error)")
         }
     }
     
-    func loadTasks(){
-        if let data = try? Data(contentsOf: filePath!){
-            let decoder = PropertyListDecoder()
-            do{
-            dummy = try decoder.decode([TodoItem].self, from: data)
-            }catch{
-                print("error gamed fas5h \(error)")
+    func loadTasks(with request: NSFetchRequest<Item> = Item.fetchRequest()){
+        let predicate = NSPredicate(format: "parentCategory.title MATCHES %@", selectedCategory?.title ?? "")
+        if let incomingPredicate = request.predicate{
+            request.predicate = NSCompoundPredicate(andPredicateWithSubpredicates: [predicate, incomingPredicate])
+        }else{
+            request.predicate = predicate
+        }
+        
+        do{
+            dummy = try context.fetch(request)
+            tableView.reloadData()
+        }catch{
+            print("error gamed fas5h \(error)")
+        }
+    }
+}
+
+extension TodoListViewController: UISearchBarDelegate{
+    func searchBarSearchButtonClicked(_ searchBar: UISearchBar) {
+        let request : NSFetchRequest<Item> = Item.fetchRequest()
+        request.predicate = NSPredicate(format: "title CONTAINS[cd] %@", searchBar.text!)
+        request.sortDescriptors =  [NSSortDescriptor(key: "title", ascending: true)]
+        loadTasks(with: request)
+    }
+    
+    
+    func searchBar(_ searchBar: UISearchBar, textDidChange searchText: String) {
+        if(searchText.count == 0){
+            loadTasks()
+            DispatchQueue.main.async {
+                searchBar.resignFirstResponder()
             }
+            
         }
     }
 }
