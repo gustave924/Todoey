@@ -8,7 +8,7 @@
 
 import Foundation
 
-class TodoItem{
+class TodoItem: Codable{
     var itemValue : String
     var isChecked : Bool
 

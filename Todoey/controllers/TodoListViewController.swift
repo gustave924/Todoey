@@ -13,12 +13,11 @@ class TodoListViewController: UITableViewController {
                               TodoItem(itemValue: "Hello", isChecked: false),
                               TodoItem(itemValue: "Hi", isChecked: false)]
     let defaults = UserDefaults.standard
+    let filePath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first?.appendingPathComponent("Items.plist")
     override func viewDidLoad() {
         super.viewDidLoad()
         // Do any additional setup after loading the view.
-        if let items = defaults.array(forKey: "TodoListArray") as? [TodoItem]{
-            dummy = items
-        }
+        loadTasks()
 
     }
 
@@ -48,18 +47,11 @@ class TodoListViewController: UITableViewController {
         print(dummy[indexPath.row])
         let isChecked = dummy[indexPath.row].isChecked
         dummy[indexPath.row].isChecked = !isChecked
-        /*if(isChecked){
-            tableView.cellForRow(at: indexPath)?.accessoryType = .none
-        }else{
-            tableView.cellForRow(at: indexPath)?.accessoryType = .checkmark
-        }*/
+        
         tableView.reloadData()
-        /*if(tableView.cellForRow(at: indexPath)?.accessoryType == .checkmark){
-            tableView.cellForRow(at: indexPath)?.accessoryType = .none
-        }else{
-            tableView.cellForRow(at: indexPath)?.accessoryType = .checkmark
-        }*/
+        
         tableView.deselectRow(at: indexPath, animated: true)
+        saveTasks()
     }
     
     @IBAction func addItemAction(_ sender: Any) {
@@ -70,7 +62,9 @@ class TodoListViewController: UITableViewController {
             (action) in
             let textField = alert.textFields![0]
             self.dummy.append(TodoItem(itemValue: textField.text!, isChecked: false))
-            //self.defaults.set(self.dummy, forKey: "TodoListArray")
+            
+            self.saveTasks()
+            
             self.tableView.reloadData()
         }
         
@@ -83,5 +77,25 @@ class TodoListViewController: UITableViewController {
         present(alert, animated: true, completion: nil)
     }
     
+    func saveTasks(){
+        let encoder = PropertyListEncoder()
+        do{
+            let data = try encoder.encode(self.dummy)
+            try data.write(to: self.filePath!)
+        }catch{
+            print("error w7esh 5ales \(error)")
+        }
+    }
+    
+    func loadTasks(){
+        if let data = try? Data(contentsOf: filePath!){
+            let decoder = PropertyListDecoder()
+            do{
+            dummy = try decoder.decode([TodoItem].self, from: data)
+            }catch{
+                print("error gamed fas5h \(error)")
+            }
+        }
+    }
 }
 
